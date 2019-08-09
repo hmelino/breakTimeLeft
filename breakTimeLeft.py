@@ -5,7 +5,7 @@ timeNow=datetime.datetime.today()
 print("hey")
 
 firstUrl='https://fourthhospitality.com/*removed*'
-payload = {'Username': '*removed*', 'Password': '*removed*'}
+payload = {'Username': '', 'Password': ''}
 
 print("connecting to Fourth")
 s=requests.Session()
