@@ -1,13 +1,15 @@
 import requests
 import re as re
 import datetime
+import naah
+from naah import *
 timeNow=datetime.datetime.today()
-print("hey")
+print("Welcome 😎")
 
 firstUrl='https://fourthhospitality.com/*removed*'
-payload = {'Username': '*removed*', 'Password': '*removed*'}
+payload = {'Username': str(naah.d1), 'Password': str(naah.d2)}
 
-print("connecting to Fourth")
+print("connecting to Fourth...")
 s=requests.Session()
 connect=s.get(firstUrl)
 if "<Response [200]>" in str(connect):
@@ -32,13 +34,18 @@ if len(month)<2:
     month="0"+month
 todayDateUrl=day+"%2F"+month+"%2F"+year
 
-
+customDate="08%2F08%2F2019"
 url2="https://www.fourthhospitality.com/Portal/Admin/Modules/HR/Rotas/Time_Attendance/ViewAttendance.asp?ClientID=*removed*&LocationID=*removed*&lngMemberID=*removed*&ShiftDate="+str(todayDateUrl)+"&lngShiftHeaderID=*removed*&lngDivisionID=*removed*&lngME_ID=0&lngDay=5&g_intAttendanceLateThreshold=2&g_intAttendanceEarlyThreshold=2&clockStatus=1&Location=*removed*&Employee=*removed*&lngMainJob=1"
 connect4=s.get(url2)
+finalConnect=connect4.text
 
-breakStartMatch=re.findall("(\d{2}:\d{2}:\d{2})<.td><td ALIGN='center'>Break Start",connect4.text)
-if len(breakStartMatch)<1:
-    print("You didnt sign in today ")
+breakStartMatch=re.findall("(\d{2}:\d{2}:\d{2})<.td><td ALIGN='center'>Break Start",finalConnect)
+signIn=re.findall("(\d{4})'><.td><td ALIGN='center'>Clock In",finalConnect)
+
+if len(signIn)<1:
+    print("You are off today 😒😛😂 ")
+elif len(breakStartMatch)<1:
+  print("You didnt sign for your break 🙈")
 else:
     parsedTime=datetime.datetime.strptime(breakStartMatch[0],"%H:%M:%S")
     o=(timeNow-parsedTime)
