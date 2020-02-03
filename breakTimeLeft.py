@@ -1,54 +1,80 @@
 import requests
-import re as re
+import re 
 import datetime
-import naah
-from naah import *
-timeNow=datetime.datetime.today()
+
+class Passwords:
+    def __init__(self,portal,username,password,ClientID,LocationID,lngMemberID,lngShiftHeaderID,lngDivisionID,Location,Employee):
+        self.portal=portal
+        self.username=username
+        self.password=password
+        self.ClientID=ClientID
+        self.LocationID=LocationID
+        self.lngMemberID=lngMemberID
+        self.lngShiftHeaderID=lngShiftHeaderID
+        self.lngDivisionID=lngDivisionID
+        self.Location=Location
+        self.Employee=Employee
+
+class Times:
+    start=None
+    bStart=None
+    bFinish=None
+    finish=None
+
+    def __init__(self,text):
+        self.findTimes(text)
+        self.countBreak()
+    
+    def convertTime(self,text):
+        if text:
+            return datetime.datetime.strptime(text,'%H:%M:%S')
+        return None
+
+    def searchTime(self,pattern,text):
+        try:
+             re.findall(r'(\d{2}:\d{2}:\d{2}).{20,30}'+pattern,text)[0]
+        except IndexError:
+            return None
+
+    def findTimes(self,text):
+        Times.start=self.convertTime(self.searchTime('Clock In',text))
+        Times.bStart=self.convertTime(self.searchTime('Break Start',text))
+        Times.bFinish=self.convertTime(self.searchTime('Break End',text))
+        Times.finish=self.convertTime(self.searchTime('Clock Out',text))
+
+    def howMuchBreak(self):
+        return (today - self.bStart).seconds
+
+    def countBreak(self):
+        if self.bStart:
+            if self.bFinish:
+                print(f'You already had {int((self.bFinish - self.bStart).seconds/60)} minutes long break.')
+            else:
+                print(f'You are already {self.howMuchBreak()/60} minutes on your break.')
+        else:
+            print('You didnt sign in today.')
+
+#Fill up required info in Passwords object
+passObject=Passwords()
+payLoad={
+    'Username' : passObject.username,
+    'Password' : passObject.password
+}
+
 print("Welcome 😎")
+today=datetime.datetime.today()
+with requests.Session() as s:
+    c1=s.get(f'https://fourthhospitality.com/{passObject.portal}')
+    if c1.status_code==200:
+        print(". 1/3")
+    c2=s.post('http://www.fourthhospitality.com/Portal/Registration/login.asp',data=payLoad)
+    if c2.status_code==200:
+        print(".. 2/3")
+    stringDay='{}{}{}{}{}'.format(today.strftime('%d'),'%2F',today.strftime('%m'),'%2F',today.strftime('%Y'))
+    c3=s.get(f"https://www.fourthhospitality.com/Portal/Admin/Modules/HR/Rotas/Time_Attendance/ViewAttendance.asp?ClientID={passObject.ClientID}&LocationID={passObject.LocationID}&lngMemberID={passObject.lngMemberID}&ShiftDate={stringDay}&lngShiftHeaderID={passObject.lngShiftHeaderID}&lngDivisionID={passObject.lngDivisionID}&lngME_ID=0&lngDay=5&g_intAttendanceLateThreshold=2&g_intAttendanceEarlyThreshold=2&clockStatus=1&Location={passObject.Location}&Employee={passObject.Employee}&lngMainJob=1")
+    if c3.status_code==200:
+        print("... 3/3")
 
-firstUrl='https://fourthhospitality.com/*removed*'
-payload = {'Username': str(naah.d1), 'Password': str(naah.d2)}
+shiftTime=Times(c3.text)
 
-print("connecting to Fourth...")
-s=requests.Session()
-connect=s.get(firstUrl)
-if "<Response [200]>" in str(connect):
-    print(". 1/3")
-url="http://www.fourthhospitality.com/Portal/Registration/login.asp"
-connect2=s.post(url, data=payload)
-if "<Response [200]>" in str(connect2):
-    print(".. 2/3")
-
-
-connect3=s.get("https://www.fourthhospitality.com/Portal/menus/frameset.asp")
-if "<Response [200]>" in str(connect3):
-    print("... 3/3")
-
-# create today date url
-day=str(datetime.datetime.today().day)
-month=str(datetime.datetime.today().month)
-year=str(datetime.datetime.today().year)
-if len(day)<2:
-    day="0"+day
-if len(month)<2:
-    month="0"+month
-todayDateUrl=day+"%2F"+month+"%2F"+year
-
-customDate="08%2F08%2F2019"
-url2="https://www.fourthhospitality.com/Portal/Admin/Modules/HR/Rotas/Time_Attendance/ViewAttendance.asp?ClientID=*removed*&LocationID=*removed*&lngMemberID=*removed*&ShiftDate="+str(todayDateUrl)+"&lngShiftHeaderID=*removed*&lngDivisionID=*removed*&lngME_ID=0&lngDay=5&g_intAttendanceLateThreshold=2&g_intAttendanceEarlyThreshold=2&clockStatus=1&Location=*removed*&Employee=*removed*&lngMainJob=1"
-connect4=s.get(url2)
-finalConnect=connect4.text
-
-breakStartMatch=re.findall("(\d{2}:\d{2}:\d{2})<.td><td ALIGN='center'>Break Start",finalConnect)
-signIn=re.findall("(\d{4})'><.td><td ALIGN='center'>Clock In",finalConnect)
-
-if len(signIn)<1:
-    print("You are off today 😒😛😂 ")
-elif len(breakStartMatch)<1:
-  print("You didnt sign for your break 🙈")
-else:
-    parsedTime=datetime.datetime.strptime(breakStartMatch[0],"%H:%M:%S")
-    o=(timeNow-parsedTime)
-    startTime = (datetime.datetime.min + o).time()
-    leftTime=(startTime.minute)
-    print("You have left "+str(leftTime)+" minutes till your break finish")
+pass
